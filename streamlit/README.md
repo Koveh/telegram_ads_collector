@@ -16,8 +16,20 @@ Interactive web dashboard for visualizing Telegram Ads Collector data.
 
 ### Run Dashboard
 
+**Option 1: Using the run script (recommended)**
 ```bash
+./streamlit/run.sh
+```
+
+**Option 2: Using virtual environment directly**
+```bash
+source venv/bin/activate
 streamlit run streamlit/app.py
+```
+
+**Option 3: Using venv python directly**
+```bash
+venv/bin/streamlit run streamlit/app.py
 ```
 
 The dashboard will open in your browser at `http://localhost:8501`

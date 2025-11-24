@@ -128,7 +128,15 @@ python utils/test_connection.py
 
 ### View Dashboard
 ```bash
+# Option 1: Using run script
+./streamlit/run.sh
+
+# Option 2: Using venv directly
+source venv/bin/activate
 streamlit run streamlit/app.py
+
+# Option 3: Using venv python
+venv/bin/streamlit run streamlit/app.py
 ```
 The dashboard will open at `http://localhost:8501`
 
