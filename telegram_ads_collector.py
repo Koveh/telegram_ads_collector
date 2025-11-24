@@ -45,15 +45,40 @@ class TelegramAdsCollector:
             soup = BeautifulSoup(response.text, 'html.parser')
             
             # Extract main data
+            # Get title from ad preview
+            title_elem = soup.find('div', {'class': 'ad-msg-link-preview-title'})
+            title = title_elem.text.strip() if title_elem else None
+            
+            # Get description from ad preview
+            desc_elem = soup.find('div', {'class': 'ad-msg-link-preview-desc'})
+            description = desc_elem.text.strip() if desc_elem else None
+            
+            # Get bot link
+            bot_link = self._safe_extract_href(soup, 'a', {'href': lambda x: x and 't.me' in x})
+            
+            # Get status, CPM, Views
+            status = self._safe_extract(soup, text='Status', next_sibling=True)
+            cpm = self._safe_extract(soup, text='CPM', next_sibling=True)
+            views = self._safe_extract(soup, text='Views', next_sibling=True)
+            
+            # Get target channels and remove "Will be shown in" prefix
+            target_channel_elem = soup.find('div', {'class': 'pr-form-info-block plus'})
+            target_channel = None
+            if target_channel_elem:
+                target_channel = target_channel_elem.text.strip()
+                # Remove "Will be shown in" prefix if present
+                if target_channel.startswith('Will be shown in '):
+                    target_channel = target_channel.replace('Will be shown in ', '', 1)
+            
             data = {
                 'campaign_id': campaign_id,
-                'title': self._safe_extract(soup, 'h1'),
-                'description': self._safe_extract(soup, 'div', {'class': 'ad-msg-text'}),
-                'bot_link': self._safe_extract_href(soup, 'a', {'href': lambda x: x and 't.me' in x}),
-                'status': self._safe_extract(soup, text='Status', next_sibling=True),
-                'cpm': self._safe_extract(soup, text='CPM', next_sibling=True),
-                'views': self._safe_extract(soup, text='Views', next_sibling=True),
-                'target_channel': self._safe_extract(soup, 'div', {'class': 'pr-form-info-block plus'}),
+                'title': title,
+                'description': description,
+                'bot_link': bot_link,
+                'status': status,
+                'cpm': cpm,
+                'views': views,
+                'target_channel': target_channel,
                 'collected_at': datetime.utcnow().isoformat(),
                 'is_active': self._check_if_active(soup)
             }

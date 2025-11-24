@@ -143,15 +143,17 @@ The dashboard will open at `http://localhost:8501`
 ## Database Schema
 
 ### `ads.campaigns`
-- `campaign_id` (PK): Campaign identifier
-- `title`: Campaign title
-- `description`: Campaign description
+- `campaign_id` (PK): Campaign identifier (from share stats URL)
+- `title`: Campaign title (from ad preview)
+- `description`: Campaign description (from ad preview)
 - `bot_link`: Link to Telegram bot
-- `target_channel`: Target channels list
+- `target_channel`: Target channels list (without "Will be shown in" prefix)
 - `first_seen`: First collection timestamp
 - `last_seen`: Last collection timestamp
 - `is_active`: Active status
 - `last_status`: Last known status
+- `cpm`: Cost per mille (CPM)
+- `views`: Total views count
 
 ### `ads.views_stats`
 - `id` (PK): Auto-increment ID
@@ -167,31 +169,38 @@ The dashboard will open at `http://localhost:8501`
 - `campaign_id`: Campaign identifier
 - `collected_at`: Collection timestamp
 - `date`: Statistics date
-- `spent_budget`: Budget spent (if available)
+- `spent_budget`: Budget spent in TON (from CSV, handles conflicts by keeping larger value)
 
 ## Configuration
 
 ### Campaign IDs
 
-Campaign IDs are configured in `collect_stats.py`. You have two options:
+Campaign IDs must be manually obtained from Telegram Ads platform. They are configured in `collect_stats.py`.
 
-**Option 1: Collect all campaigns from database (recommended)**
-```python
-CAMPAIGN_IDS: List[str] = []  # Empty list = get all from database
-```
+**How to get a Campaign ID:**
 
-**Option 2: Specify specific campaigns**
+1. Go to your Telegram Ads campaign (e.g., `mydietarybot-lifestyle`)
+2. Click on **Statistics**
+3. Click on **Share Stats** button
+4. Copy the Campaign ID from the URL
+   - Example: `https://ads.telegram.org/stats/T7joQFHQxN7zs7Az`
+   - Campaign ID: `T7joQFHQxN7zs7Az`
+
+**Configuration:**
+
+Add campaign IDs to `collect_stats.py`:
 ```python
 CAMPAIGN_IDS = [
-    "B2eGt4psjcUK5yHC",
-    "Bp4vo7ycSoduP1FR",
+    "T7joQFHQxN7zs7Az",
+    "X7JRhMZxu2IPuwZd",
     # ... more campaign IDs
 ]
 ```
 
-**How it works:**
-- If `CAMPAIGN_IDS` is empty, the system automatically collects data for all campaigns stored in the database
-- If `CAMPAIGN_IDS` contains IDs, only those campaigns will be processed
+**Important Notes:**
+- Campaign IDs cannot be automatically discovered - they must be manually obtained
+- Each campaign ID is unique and can only be accessed if you have the share link
+- The system will collect data for all campaigns specified in `CAMPAIGN_IDS`
 - New campaigns are automatically added to the database when first encountered
 
 ### Database Configuration

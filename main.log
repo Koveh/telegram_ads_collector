@@ -1454,3 +1454,7 @@ KeyError: "['Started bot'] not in index"
 2025-11-24 17:16:13,791 INFO Completed collect_campaign_data
 2025-11-24 17:16:13,791 INFO Сбор данных успешно завершен
 2025-11-24 17:16:13,792 INFO Completed collect_stats
+2025-11-24 17:45:35,876 INFO Executing _create_tables
+2025-11-24 17:45:35,890 INFO Schema 'ads' already exists
+2025-11-24 17:45:35,894 INFO Tables checked/created successfully
+2025-11-24 17:45:35,894 INFO Completed _create_tables
