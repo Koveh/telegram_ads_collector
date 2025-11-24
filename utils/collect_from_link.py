@@ -12,28 +12,28 @@ from logger_decorator import log_function
 @log_function
 def collect_telegram_ads_page(url: str) -> Optional[Dict]:
     """
-    Получает весь HTML-контент страницы Telegram Ads.
+    Gets full HTML content from Telegram Ads page.
     
     Args:
-        url (str): URL страницы Telegram Ads
+        url: Telegram Ads page URL
         
     Returns:
-        dict: Словарь с HTML-контентом и метаданными
+        Dictionary with HTML content and metadata
     """
     try:
-        # Добавляем headers для имитации браузера
+        # Add headers to mimic browser
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         
-        # Отправляем GET запрос
+        # Send GET request
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         
-        # Создаем объект BeautifulSoup для форматированного вывода
+        # Create BeautifulSoup object for formatted output
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Собираем данные
+        # Collect data
         data = {
             'html_content': soup.prettify(),
             'status_code': response.status_code,
@@ -47,7 +47,7 @@ def collect_telegram_ads_page(url: str) -> Optional[Dict]:
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
-        logger.error(f"Ошибка при получении страницы: {str(e)}")
+        logger.error(f"Error getting page: {str(e)}")
         return None
 
 if __name__ == "__main__":
@@ -55,10 +55,10 @@ if __name__ == "__main__":
     page_data = collect_telegram_ads_page(url)
     
     if page_data:
-        # Выводим основную информацию
-        print(f"Статус код: {page_data['status_code']}")
-        print(f"Время сбора: {page_data['collected_at']}")
-        print("\nЗаголовки ответа:")
+        # Print main information
+        print(f"Status code: {page_data['status_code']}")
+        print(f"Collection time: {page_data['collected_at']}")
+        print("\nResponse headers:")
         print(json.dumps(page_data['headers'], indent=2, ensure_ascii=False))
-        print("\nHTML контент:")
+        print("\nHTML content:")
         print(page_data['html_content'])
