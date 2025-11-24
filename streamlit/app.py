@@ -22,11 +22,6 @@ st.set_page_config(
     layout="wide"
 )
 
-def get_db_manager():
-    """Get database manager instance."""
-    postgres_config = get_postgres_config()
-    return PostgresManager(postgres_config)
-
 @st.cache_data(ttl=60)
 def load_campaigns() -> pd.DataFrame:
     """Load campaigns data."""
