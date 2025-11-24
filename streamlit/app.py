@@ -7,12 +7,12 @@ import os
 import sys
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from collect_stats import get_postgres_config
-from postgres_manager import PostgresManager
 
 load_dotenv()
 
@@ -22,17 +22,18 @@ st.set_page_config(
     layout="wide"
 )
 
-@st.cache_data(ttl=300)
 def get_db_manager():
     """Get database manager instance."""
     postgres_config = get_postgres_config()
     return PostgresManager(postgres_config)
 
 @st.cache_data(ttl=60)
-def load_campaigns(_db_manager: PostgresManager) -> pd.DataFrame:
+def load_campaigns() -> pd.DataFrame:
     """Load campaigns data."""
     try:
-        with _db_manager.engine.connect() as connection:
+        postgres_config = get_postgres_config()
+        engine = create_engine(postgres_config['link'])
+        with engine.connect() as connection:
             df = pd.read_sql(
                 "SELECT * FROM ads.campaigns ORDER BY last_seen DESC",
                 connection
@@ -43,9 +44,11 @@ def load_campaigns(_db_manager: PostgresManager) -> pd.DataFrame:
         return pd.DataFrame()
 
 @st.cache_data(ttl=60)
-def load_views_stats(_db_manager: PostgresManager, campaign_ids: list = None, limit: int = None) -> pd.DataFrame:
+def load_views_stats(campaign_ids: list = None, limit: int = None) -> pd.DataFrame:
     """Load views statistics."""
     try:
+        postgres_config = get_postgres_config()
+        engine = create_engine(postgres_config['link'])
         query = "SELECT * FROM ads.views_stats"
         if campaign_ids:
             placeholders = ','.join([f"'{cid}'" for cid in campaign_ids])
@@ -54,7 +57,7 @@ def load_views_stats(_db_manager: PostgresManager, campaign_ids: list = None, li
         if limit:
             query += f" LIMIT {limit}"
         
-        with _db_manager.engine.connect() as connection:
+        with engine.connect() as connection:
             df = pd.read_sql(query, connection)
         return df
     except Exception as e:
@@ -62,9 +65,11 @@ def load_views_stats(_db_manager: PostgresManager, campaign_ids: list = None, li
         return pd.DataFrame()
 
 @st.cache_data(ttl=60)
-def load_budget_stats(_db_manager: PostgresManager, campaign_ids: list = None, limit: int = None) -> pd.DataFrame:
+def load_budget_stats(campaign_ids: list = None, limit: int = None) -> pd.DataFrame:
     """Load budget statistics."""
     try:
+        postgres_config = get_postgres_config()
+        engine = create_engine(postgres_config['link'])
         query = "SELECT * FROM ads.budget_stats"
         if campaign_ids:
             placeholders = ','.join([f"'{cid}'" for cid in campaign_ids])
@@ -73,7 +78,7 @@ def load_budget_stats(_db_manager: PostgresManager, campaign_ids: list = None, l
         if limit:
             query += f" LIMIT {limit}"
         
-        with _db_manager.engine.connect() as connection:
+        with engine.connect() as connection:
             df = pd.read_sql(query, connection)
         return df
     except Exception as e:
@@ -84,18 +89,11 @@ def main():
     st.title("📊 Telegram Ads Collector Dashboard")
     st.markdown("Visualize and explore collected advertising campaign data")
     
-    try:
-        db_manager = get_db_manager()
-    except Exception as e:
-        st.error(f"Failed to connect to database: {str(e)}")
-        st.info("Please check your .env file configuration")
-        return
-    
     # Sidebar filters
     st.sidebar.header("Filters")
     
     # Load campaigns for filter
-    campaigns_df = load_campaigns(db_manager)
+    campaigns_df = load_campaigns()
     
     if campaigns_df.empty:
         st.warning("No campaigns found in database. Run collection first.")
@@ -211,7 +209,6 @@ def main():
         st.header("Views Statistics")
         
         views_df = load_views_stats(
-            db_manager,
             campaign_ids=selected_campaigns if selected_campaigns else None,
             limit=row_limit
         )
@@ -288,7 +285,6 @@ def main():
         st.header("Budget Statistics")
         
         budget_df = load_budget_stats(
-            db_manager,
             campaign_ids=selected_campaigns if selected_campaigns else None,
             limit=row_limit
         )
