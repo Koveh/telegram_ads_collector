@@ -79,6 +79,12 @@ Utility scripts for manual operations:
 - `manual_get_data.py`: Manual data collection script
 - `test_connection.py`: Test database connection
 
+### 6. `streamlit/` folder
+Interactive web dashboard:
+- `app.py`: Streamlit application for data visualization
+- View campaigns, views stats, and budget stats
+- Filter, sort, and export data
+
 ## Installation
 
 1. Clone the repository
@@ -119,6 +125,12 @@ python utils/collect_from_link.py
 ```bash
 python utils/test_connection.py
 ```
+
+### View Dashboard
+```bash
+streamlit run streamlit/app.py
+```
+The dashboard will open at `http://localhost:8501`
 
 ## Database Schema
 
