@@ -41,8 +41,13 @@ def get_postgres_config() -> Dict[str, str]:
         "link": postgres_url
     }
 
-# Optional: Specify campaign IDs to track (leave empty to get all from database)
-CAMPAIGN_IDS: List[str] = []
+# Campaign IDs must be manually obtained from Telegram Ads platform
+# See README.md for instructions on how to get campaign IDs
+CAMPAIGN_IDS: List[str] = [
+    # Add your campaign IDs here, e.g.:
+    # "T7joQFHQxN7zs7Az",
+    # "X7JRhMZxu2IPuwZd",
+]
 
 @log_function
 def collect_campaign_data(collector: TelegramAdsCollector, 
@@ -81,29 +86,24 @@ def collect_campaign_data(collector: TelegramAdsCollector,
 def collect_stats() -> None:
     """
     Main function for collecting advertising campaign statistics.
-    If CAMPAIGN_IDS is empty, collects data for all campaigns from database.
+    Campaign IDs must be manually specified in CAMPAIGN_IDS list.
     """
     try:
+        # Check if campaign IDs are specified
+        if not CAMPAIGN_IDS:
+            logger.warning("No campaign IDs specified. Please add campaign IDs to CAMPAIGN_IDS list in collect_stats.py")
+            logger.info("See README.md for instructions on how to obtain campaign IDs")
+            return
+        
         # Initialize collector and database manager
         postgres_config = get_postgres_config()
         collector = TelegramAdsCollector()
         db_manager = PostgresManager(postgres_config)
         
-        # Determine which campaigns to process
-        if CAMPAIGN_IDS:
-            # Use specified campaign IDs
-            campaigns_to_process = CAMPAIGN_IDS
-            logger.info(f"Processing {len(campaigns_to_process)} specified campaigns")
-        else:
-            # Get all campaigns from database
-            campaigns_to_process = db_manager.get_all_campaigns()
-            if not campaigns_to_process:
-                logger.warning("No campaigns found in database. Add campaigns manually first.")
-                return
-            logger.info(f"Processing {len(campaigns_to_process)} campaigns from database")
+        logger.info(f"Processing {len(CAMPAIGN_IDS)} specified campaigns")
         
         # Collect data
-        collect_campaign_data(collector, db_manager, campaigns_to_process)
+        collect_campaign_data(collector, db_manager, CAMPAIGN_IDS)
         
         logger.info("Data collection completed successfully")
         
