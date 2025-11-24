@@ -1,0 +1,17 @@
+[Unit]
+Description=Telegram Ads Statistics Collector
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/root/automations/telegramAdsCollector
+Environment=PYTHONPATH=/root/automations/telegramAdsCollector
+Environment=PATH=/root/environments/automation_env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/root/environments/automation_env/bin/python3 /root/automations/telegramAdsCollector/collect_stats.py
+StandardOutput=append:/var/log/telegram_ads_collector.log
+StandardError=append:/var/log/telegram_ads_collector.log
+
+[Install]
+WantedBy=multi-user.target 
