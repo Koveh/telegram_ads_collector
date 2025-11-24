@@ -95,52 +95,85 @@ class TelegramAdsCollector:
     @log_function
     def get_campaign_stats(self, campaign_id: str, period: str = 'day') -> Optional[pd.DataFrame]:
         """
-        Загружает статистику кампании в формате CSV.
+        Loads campaign statistics in CSV format.
         
         Args:
-            campaign_id (str): Идентификатор кампании
-            period (str): Период статистики ('day' или '5min')
+            campaign_id: Campaign identifier
+            period: Statistics period ('day' or '5min')
             
         Returns:
-            pd.DataFrame: DataFrame с данными статистики
+            DataFrame with statistics data
         """
         try:
-            # Сначала получаем информацию о кампании для извлечения ссылок на CSV
+            # First get campaign info to extract CSV links
             campaign_info = self.get_campaign_info(campaign_id)
             if not campaign_info:
                 return None
 
             stats_data = []
 
-            logger.info(f"Данные компании - {campaign_info}")
+            logger.info(f"Campaign data: {campaign_info}")
             
-            # Загружаем статистику просмотров/кликов
+            # Load views/clicks statistics
+            views_df = None
             if campaign_info.get('views_csv_link'):
-                logger.info(f"Ссылка до ошибки - {self.BASE_URL}{campaign_info['views_csv_link']}")
-                # views_df = pd.read_csv(f"{self.BASE_URL}{campaign_info['views_csv_link'].replace('\\/', '/', 1)}")
-                views_df = pd.read_csv(f"{self.BASE_URL}{campaign_info['views_csv_link'].replace('\\/', '/', 1)}", sep='\t')
-                
-                stats_data.append(views_df)
-            # Загружаем статистику бюджета
+                csv_url = f"{self.BASE_URL}{campaign_info['views_csv_link'].replace('\\/', '/', 1)}"
+                logger.info(f"Loading views CSV: {csv_url}")
+                try:
+                    views_df = pd.read_csv(csv_url, sep='\t')
+                    # Normalize date column
+                    if 'date' in views_df.columns:
+                        views_df['date'] = pd.to_datetime(views_df['date'], errors='coerce')
+                    stats_data.append(views_df)
+                except Exception as e:
+                    logger.error(f"Error loading views CSV: {str(e)}")
+            
+            # Load budget statistics
+            budget_df = None
             if campaign_info.get('budget_csv_link'):
-                logger.info(f"Ссылка до ошибки - {self.BASE_URL}{campaign_info['budget_csv_link']}")
-                # budget_df = pd.read_csv(f"{self.BASE_URL}{campaign_info['budget_csv_link'].replace('\\/', '/', 1)}")
-                budget_df = pd.read_csv(f"{self.BASE_URL}{campaign_info['budget_csv_link'].replace('\\/', '/', 1)}", sep='\t')
-                stats_data.append(budget_df)
+                csv_url = f"{self.BASE_URL}{campaign_info['budget_csv_link'].replace('\\/', '/', 1)}"
+                logger.info(f"Loading budget CSV: {csv_url}")
+                try:
+                    budget_df = pd.read_csv(csv_url, sep='\t')
+                    # Handle "Spent budget, TON" column name
+                    if 'Spent budget, TON' in budget_df.columns:
+                        budget_df = budget_df.rename(columns={'Spent budget, TON': 'spent_budget'})
+                    # Normalize date column
+                    if 'date' in budget_df.columns:
+                        budget_df['date'] = pd.to_datetime(budget_df['date'], errors='coerce')
+                    # Convert spent_budget to numeric, handling comma as decimal separator
+                    if 'spent_budget' in budget_df.columns:
+                        budget_df['spent_budget'] = budget_df['spent_budget'].astype(str).str.replace(',', '.').astype(float, errors='ignore')
+                    stats_data.append(budget_df)
+                except Exception as e:
+                    logger.error(f"Error loading budget CSV: {str(e)}")
+            
             if not stats_data:
                 return None
-                
-            # Объединяем все данные
-            result_df = pd.concat(stats_data, axis=1)
+            
+            # Merge dataframes on date column
+            if len(stats_data) == 2:
+                # Merge views and budget data
+                result_df = pd.merge(
+                    stats_data[0],
+                    stats_data[1],
+                    on='date',
+                    how='outer',
+                    suffixes=('', '_budget')
+                )
+                # Remove duplicate columns
+                result_df = result_df.loc[:, ~result_df.columns.str.endswith('_budget')]
+            else:
+                result_df = stats_data[0]
+            
             result_df['campaign_id'] = campaign_id
             result_df['collected_at'] = datetime.utcnow().isoformat()
 
-            
-            logger.info(f"Статистика для кампании {campaign_id} успешно загружена - {result_df.columns}")
+            logger.info(f"Statistics loaded for campaign {campaign_id}: {result_df.columns.tolist()}")
             return result_df
             
         except Exception as e:
-            logger.error(f"Ошибка при загрузке CSV для кампании {campaign_id}: {str(e)}")
+            logger.error(f"Error loading CSV for campaign {campaign_id}: {str(e)}")
             return None
 
     def _safe_extract(self, soup: BeautifulSoup, tag: str = None, attrs: dict = None, text: str = None, next_sibling: bool = False) -> Optional[str]:
